@@ -44,6 +44,17 @@ if (png.length < 24 || png.toString("latin1", 12, 16) !== "IHDR") {
 const width = png.readUInt32BE(16);
 const height = png.readUInt32BE(20);
 
+// A whole PNG ends with the IEND chunk: 4-byte length 0, "IEND", 4-byte
+// CRC. Reject a truncated file even if its header and size look right.
+const iend = png.subarray(png.length - 12);
+if (
+  png.length < 12 ||
+  iend.readUInt32BE(0) !== 0 ||
+  iend.toString("latin1", 4, 8) !== "IEND"
+) {
+  throw new Error("entry.png is truncated: no IEND chunk at the end");
+}
+
 if (png.length > MAX_BYTES) {
   throw new Error(`entry.png is ${png.length} bytes, over the 1 MiB gate`);
 }
